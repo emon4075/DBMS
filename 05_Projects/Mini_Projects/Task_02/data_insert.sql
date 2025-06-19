@@ -3,6 +3,7 @@ SELECT DISTINCT company_name
 FROM tb.raw_csv_data 
 WHERE company_name IS NOT NULL AND company_name != '';
 
+
 INSERT INTO diseases (disease_name, disease_category)
 SELECT DISTINCT disease_name, disease_category
 FROM tb.raw_csv_data 
@@ -12,7 +13,7 @@ WHERE disease_name IS NOT NULL AND disease_name != '';
 INSERT INTO side_Effects (side_effect_name)
 SELECT DISTINCT side_effect
 FROM (
-    SELECT side_effect as side_effect FROM tb.raw_csv_data WHERE side_effect IS NOT NULL AND side_effect != ''
+    SELECT side_effect FROM tb.raw_csv_data WHERE side_effect IS NOT NULL AND side_effect != ''
     UNION
     SELECT side_effect_0 FROM tb.raw_csv_data WHERE side_effect_0 IS NOT NULL AND side_effect_0 != ''
     UNION  
@@ -65,17 +66,49 @@ JOIN Side_Effects se ON (
     r.side_effect_3 = se.side_effect_name
 );
 
------------------------ Problem-------------------------------------
+
+
+
+
+
+--- Missing Drugs Insertion ----
+
+INSERT INTO drugs (drug_name)
+SELECT DISTINCT interacts_with
+FROM tb.raw_csv_data
+WHERE interacts_with IS NOT NULL AND interacts_with != ''
+  AND interacts_with NOT IN (SELECT drug_name FROM drugs)
+UNION
+SELECT DISTINCT interacts_with_0
+FROM tb.raw_csv_data
+WHERE interacts_with_0 IS NOT NULL AND interacts_with_0 != ''
+  AND interacts_with_0 NOT IN (SELECT drug_name FROM drugs)
+UNION
+SELECT DISTINCT interacts_with_1
+FROM tb.raw_csv_data
+WHERE interacts_with_1 IS NOT NULL AND interacts_with_1 != ''
+  AND interacts_with_1 NOT IN (SELECT drug_name FROM drugs);
+
+--------- Problem Solved ------------------
 INSERT INTO drug_interactions (drug1_id, drug2_id, interaction_type)
-SELECT DISTINCT d1.drug_id, d2.drug_id, 'interacts_with'
+SELECT DISTINCT
+    LEAST(d1.drug_id, d2.drug_id),
+    GREATEST(d1.drug_id, d2.drug_id),
+    'interacts_with'
 FROM tb.raw_csv_data r
-JOIN Drugs d1 ON r.drug_name = d1.drug_name
-JOIN Drugs d2 ON (
+JOIN drugs d1 ON r.drug_name = d1.drug_name
+JOIN drugs d2 ON (
     r.interacts_with = d2.drug_name OR
     r.interacts_with_0 = d2.drug_name OR
     r.interacts_with_1 = d2.drug_name
 )
-WHERE d1.drug_id != d2.drug_id;
+WHERE d1.drug_id <> d2.drug_id
+  AND NOT EXISTS (
+      SELECT 1 FROM drug_interactions di
+      WHERE di.drug1_id = LEAST(d1.drug_id, d2.drug_id)
+        AND di.drug2_id = GREATEST(d1.drug_id, d2.drug_id)
+  );
+SELECT * FROM drug_interactions;
 
 
 INSERT INTO conditions (condition_name)
@@ -98,9 +131,7 @@ JOIN conditions c ON (
     r.clinical_trial_condition_0 = c.condition_name OR
     r.clinical_trial_condition_1 = c.condition_name
 )
-WHERE (r.clinical_trial_condition IS NOT NULL AND r.clinical_trial_condition != '') OR
-    (r.clinical_trial_condition_0 IS NOT NULL AND r.clinical_trial_condition_0 != '') OR
-    (r.clinical_trial_condition_1 IS NOT NULL AND r.clinical_trial_condition_1 != '');
+WHERE (r.clinical_trial_condition IS NOT NULL AND r.clinical_trial_condition != '') OR (r.clinical_trial_condition_0 IS NOT NULL AND r.clinical_trial_condition_0 != '') OR (r.clinical_trial_condition_1 IS NOT NULL AND r.clinical_trial_condition_1 != '');
 
 
 INSERT INTO drug_trials (drug_id, trial_id)
@@ -117,15 +148,8 @@ WHERE clinical_trial_main_researcher IS NOT NULL AND clinical_trial_main_researc
 
 
 INSERT INTO medical.trial_researchers (trial_id, researcher_id)
-SELECT DISTINCT
-    ct.trial_id,
-    res.researcher_id
+SELECT DISTINCT ct.trial_id, res.researcher_id
 FROM tb.raw_csv_data r
 JOIN medical.clinical_trials ct ON r.clinical_trial_title = ct.trial_name
 JOIN medical.researchers res ON r.clinical_trial_main_researcher = res.researcher_name
-WHERE r.clinical_trial_main_researcher IS NOT NULL
-  AND r.clinical_trial_title IS NOT NULL;
-
-
-
-SELECT * FROM medical.drug_interactions;
+WHERE r.clinical_trial_main_researcher IS NOT NULL AND r.clinical_trial_title IS NOT NULL;

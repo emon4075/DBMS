@@ -91,7 +91,6 @@ CREATE TABLE Researchers (
 CREATE TABLE Trial_Researchers (
     trial_id INT,
     researcher_id INT,
-    role VARCHAR(100),
     PRIMARY KEY (trial_id, researcher_id),
     FOREIGN KEY (trial_id) REFERENCES Clinical_Trials(trial_id) ON DELETE CASCADE,
     FOREIGN KEY (researcher_id) REFERENCES Researchers(researcher_id) ON DELETE CASCADE
