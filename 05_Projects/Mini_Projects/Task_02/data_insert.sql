@@ -34,7 +34,6 @@ FROM tb.raw_csv_data r
 JOIN companies c ON r.company_name = c.company_name
 WHERE r.drug_name IS NOT NULL AND r.drug_name != '';
 
--- ALTER TABLE clinical_trials ADD COLUMN institution VARCHAR(100);
 
 INSERT INTO clinical_trials (trial_name, start_date, end_date, participants, status, location, institution)
 SELECT DISTINCT
@@ -65,10 +64,6 @@ JOIN Side_Effects se ON (
     r.side_effect_2 = se.side_effect_name OR
     r.side_effect_3 = se.side_effect_name
 );
-
-
-
-
 
 
 --- Missing Drugs Insertion ----
