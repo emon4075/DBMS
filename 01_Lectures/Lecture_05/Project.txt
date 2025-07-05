@@ -1,0 +1,5 @@
+1. ER from big data frame
+2. Oracle Developer GUI
+3. Javascript Ploty Function
+4. Lines of Code and Scalibility
+5. Textual Description to ER

@@ -96,6 +96,37 @@ GROUP BY dt.drug_id, d.drug_name
 HAVING COUNT(DISTINCT dt.trial_id) > 3;
 
 
+-- Not Sure
+-- 9. Find the largest number of clinical trials and the drugs they have studied that have been active in the same period of time?
+WITH TrialPeriods AS (
+    SELECT 
+        ct1.trial_id,
+        ct1.start_date,
+        ct1.end_date,
+        COUNT(DISTINCT ct2.trial_id) as concurrent_trials
+    FROM Clinical_Trials ct1
+    JOIN Clinical_Trials ct2 ON (
+        (ct1.start_date <= ct2.start_date OR ct1.start_date <= ct2.end_date)
+        AND
+        (ct1.end_date >= ct2.start_date OR ct1.end_date >= ct2.end_date)
+    )
+    GROUP BY ct1.trial_id, ct1.start_date, ct1.end_date
+),
+MaxConcurrent AS (
+    SELECT MAX(concurrent_trials) as max_trials
+    FROM TrialPeriods
+)
+SELECT 
+    mc.max_trials as largest_concurrent_trials,
+    GROUP_CONCAT(DISTINCT d.drug_name) as drugs_studied
+FROM MaxConcurrent mc
+JOIN TrialPeriods tp ON tp.concurrent_trials = mc.max_trials
+JOIN Drug_Trials dt ON tp.trial_id = dt.trial_id
+JOIN Drugs d ON dt.drug_id = d.drug_id
+GROUP BY mc.max_trials;
+
+
+
 -- 10. Find the main researchers that have conducted clinical trials that study drugs that can be used to treat both respiratory and cardiovascular diseases? 
 SELECT DISTINCT r.researcher_name
 FROM diseases dis 
